@@ -1,12 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Menu, 
   X, 
   ArrowRight, 
-  BookOpen, 
   Users, 
   Calendar, 
   Instagram, 
@@ -17,23 +16,7 @@ import {
   ArrowUpRight
 } from 'lucide-react';
 
-/**
- * PROJECT STRUCTURE GUIDE (For your Next.js App)
- * ------------------------------------------------
- * /app
- * layout.tsx       -> Global font (Poppins), metadata
- * page.tsx         -> The Main Landing Page (Components assembled)
- * globals.css      -> Tailwind directives & Custom CSS vars
- * /components
- * /ui              -> Buttons, Cards
- * /layout          -> Navbar, Footer
- * /sections        -> Hero, BentoGrid, NewsScroll
- * /public
- * /assets          -> Images, SVGs
- */
-
-// --- GLOBAL STYLES & CONFIG ---
-// In Next.js, use 'next/font/google' for Poppins
+// --- KONFIGURASI WARNA & STYLE ---
 const COLORS = {
   primary: '#800000', // Deep Maroon
   accent: '#006633',  // Emerald Green
@@ -41,6 +24,7 @@ const COLORS = {
   white: '#FFFFFF'
 };
 
+// --- KOMPONEN HEADER (NAVBAR) ---
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -72,6 +56,7 @@ const Header = () => {
         {/* Logo Area */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
+            {/* Pastikan file icon.png ada di folder public */}
             <img src="/icon.png" alt="Logo Yayasan" className="w-full h-full object-contain" />
           </div>
           <span className={`font-bold text-xl tracking-tight ${isScrolled ? 'text-gray-900' : 'text-white'}`}>
@@ -138,10 +123,10 @@ const Header = () => {
   );
 };
 
+// --- KOMPONEN HERO (BANNER UTAMA) ---
 const Hero = () => {
   return (
     <section className="relative h-screen min-h-[700px] flex items-center justify-center overflow-hidden bg-[#800000]">
-      {/* Background Video Placeholder / Abstract Shapes */}
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-[#800000]/80 to-[#800000]" />
         <img 
@@ -210,7 +195,6 @@ const Hero = () => {
         </motion.div>
       </div>
 
-      {/* Scroll Indicator */}
       <motion.div 
         animate={{ y: [0, 10, 0] }}
         transition={{ duration: 1.5, repeat: Infinity }}
@@ -222,6 +206,7 @@ const Hero = () => {
   );
 };
 
+// --- KOMPONEN BENTO GRID (INFO) ---
 const BentoGrid = () => {
   return (
     <section id="bento" className="py-24 bg-gray-50 px-6">
@@ -239,10 +224,9 @@ const BentoGrid = () => {
           </div>
         </motion.div>
 
-        {/* BENTO GRID LAYOUT */}
         <div className="grid grid-cols-1 md:grid-cols-3 md:grid-rows-2 gap-4 h-auto md:h-[600px]">
           
-          {/* Card 1: PPDB (Large Accent) */}
+          {/* Card 1: PPDB */}
           <motion.div 
             whileHover={{ scale: 0.98 }}
             className="md:col-span-1 md:row-span-2 rounded-[2rem] bg-[#006633] p-8 text-white relative overflow-hidden group cursor-pointer flex flex-col justify-between"
@@ -268,7 +252,7 @@ const BentoGrid = () => {
             </div>
           </motion.div>
 
-          {/* Card 2: Profile (Image Heavy) */}
+          {/* Card 2: Profile */}
           <motion.div 
             whileHover={{ scale: 0.98 }}
             className="md:col-span-2 md:row-span-1 rounded-[2rem] bg-gray-900 relative overflow-hidden group cursor-pointer"
@@ -286,7 +270,7 @@ const BentoGrid = () => {
             </div>
           </motion.div>
 
-          {/* Card 3: Berita (List) */}
+          {/* Card 3: Berita */}
           <motion.div 
             whileHover={{ scale: 0.98 }}
             className="md:col-span-1 md:row-span-1 rounded-[2rem] bg-white border border-gray-200 p-6 flex flex-col justify-center cursor-pointer hover:border-emerald-500/30 transition-colors"
@@ -319,7 +303,7 @@ const BentoGrid = () => {
              </div>
           </motion.div>
 
-          {/* Card 4: Video/Multimedia */}
+          {/* Card 4: Video */}
           <motion.div 
             whileHover={{ scale: 0.98 }}
             className="md:col-span-1 md:row-span-1 rounded-[2rem] bg-[#800000] p-6 text-white relative overflow-hidden flex flex-col justify-between"
@@ -340,6 +324,7 @@ const BentoGrid = () => {
   );
 };
 
+// --- KOMPONEN BERITA (PROFESSIONAL AUTO SCROLL & DRAG) ---
 const NewsSection = () => {
   const news = [
     { id: 1, title: "Kunjungan Syeikh dari Madinah", date: "12 Des 2023", category: "Event", img: "https://images.unsplash.com/photo-1564682057777-6f8510cb4629?auto=format&fit=crop&q=80&w=500" },
@@ -348,28 +333,134 @@ const NewsSection = () => {
     { id: 4, title: "Workshop Robotika Santri", date: "05 Des 2023", category: "Ekstrakurikuler", img: "https://images.unsplash.com/photo-1581092921461-eab62e97a783?auto=format&fit=crop&q=80&w=500" },
   ];
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  
+  // State untuk visual UI (mengubah cursor saat drag)
+  const [isDragging, setIsDragging] = useState(false);
+  
+  // Refs untuk logika animasi & drag (menggunakan ref agar performa tinggi tanpa re-render)
+  const directionRef = useRef<'right' | 'left'>('right');
+  const isPausedRef = useRef(false); // Paused saat hover
+  const isWaitingRef = useRef(false); // Waiting saat di ujung (biar elegan)
+  
+  // Refs untuk koordinat Drag
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
+
+  // LOGIKA 1: Professional Auto Scroll (Smooth Ping-Pong with Pause)
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const animateScroll = () => {
+      const container = containerRef.current;
+      
+      // Jalankan animasi jika: Container ada, Tidak sedang didrag, Tidak dihover, Tidak sedang menunggu di ujung
+      if (container && !isDragging && !isPausedRef.current && !isWaitingRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = container;
+        const maxScroll = scrollWidth - clientWidth;
+        const speed = 0.6; // Kecepatan scroll (sesuaikan agar smooth)
+
+        // Deteksi Ujung (dengan toleransi 1px untuk akurasi)
+        const isAtRightEnd = Math.ceil(scrollLeft) >= maxScroll - 1;
+        const isAtLeftEnd = scrollLeft <= 1;
+
+        if (directionRef.current === 'right') {
+          if (!isAtRightEnd) {
+            container.scrollLeft += speed;
+          } else {
+            // Jika mentok Kanan -> Tunggu sebentar -> Balik Kiri
+            isWaitingRef.current = true;
+            setTimeout(() => {
+              directionRef.current = 'left';
+              isWaitingRef.current = false;
+            }, 2000); // Jeda 2 detik
+          }
+        } else {
+          if (!isAtLeftEnd) {
+            container.scrollLeft -= speed;
+          } else {
+            // Jika mentok Kiri -> Tunggu sebentar -> Balik Kanan
+            isWaitingRef.current = true;
+            setTimeout(() => {
+              directionRef.current = 'right';
+              isWaitingRef.current = false;
+            }, 2000); // Jeda 2 detik
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(animateScroll);
+    };
+
+    animationFrameId = requestAnimationFrame(animateScroll);
+    return () => cancelAnimationFrame(animationFrameId);
+  }, [isDragging]); // Re-run loop jika drag state berubah
+
+  // LOGIKA 2: Event Handlers untuk Mouse (Drag & Pause)
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setIsDragging(true);
+    isPausedRef.current = true; // Stop auto scroll saat diklik
+    startXRef.current = e.pageX - (containerRef.current?.offsetLeft || 0);
+    scrollLeftRef.current = containerRef.current?.scrollLeft || 0;
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    // Kita tidak langsung set isPausedRef = false di sini, 
+    // karena onMouseLeave yang akan mengurusi resume saat mouse pergi.
+    // Jika mouse masih di atas elemen, biarkan tetap paused (hover effect).
+  };
+
+  const handleMouseLeave = () => {
+    setIsDragging(false);
+    isPausedRef.current = false; // Lanjut auto scroll saat mouse pergi
+  };
+
+  const handleMouseEnter = () => {
+    isPausedRef.current = true; // Pause auto scroll saat mouse masuk (hover)
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    e.preventDefault();
+    const x = e.pageX - (containerRef.current?.offsetLeft || 0);
+    const walk = (x - startXRef.current) * 2; // Multiplier kecepatan drag
+    if (containerRef.current) {
+      containerRef.current.scrollLeft = scrollLeftRef.current - walk;
+    }
+  };
+
   return (
     <section id="news" className="py-24 bg-white overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 mb-12">
         <h2 className="text-4xl font-bold text-[#800000]">Kabar Ashabul Quran</h2>
       </div>
 
-      {/* Horizontal Scroll Snap Container */}
-      <div className="flex overflow-x-auto gap-6 px-6 pb-12 snap-x snap-mandatory hide-scrollbar">
-        {/* Spacer for left padding alignment */}
+      <div 
+        ref={containerRef}
+        onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+        onMouseEnter={handleMouseEnter}
+        onMouseMove={handleMouseMove}
+        
+        className={`flex overflow-x-auto gap-6 px-6 pb-12 hide-scrollbar ${
+          isDragging ? 'cursor-grabbing' : 'snap-x snap-mandatory cursor-grab'
+        }`}
+        style={{ scrollBehavior: 'auto' }}
+      >
         <div className="w-0 md:w-[calc((100vw-80rem)/2)] shrink-0" />
         
         {news.map((item) => (
           <motion.div 
             key={item.id}
             whileHover={{ y: -10 }}
-            className="snap-center shrink-0 w-[300px] md:w-[350px] bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50 group"
+            className="snap-center shrink-0 w-[300px] md:w-[350px] bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50 group select-none"
           >
             <div className="h-48 overflow-hidden relative">
               <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-[#800000] uppercase tracking-wide">
                 {item.category}
               </div>
-              <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+              <img src={item.img} alt={item.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 pointer-events-none" />
             </div>
             <div className="p-6">
               <div className="flex items-center gap-2 text-gray-400 text-sm mb-3">
@@ -385,13 +476,13 @@ const NewsSection = () => {
           </motion.div>
         ))}
         
-        {/* Spacer for right padding alignment */}
         <div className="w-6 shrink-0" />
       </div>
     </section>
   );
 };
 
+// --- KOMPONEN FOOTER ---
 const Footer = () => {
   return (
     <footer id="footer" className="bg-[#1a1a1a] text-white pt-20 pb-10 rounded-t-[3rem] mt-10">
@@ -400,16 +491,19 @@ const Footer = () => {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-lg overflow-hidden flex items-center justify-center">
               <img src="/icon.png" alt="Logo Yayasan" className="w-full h-full object-contain" />
-           </div>
+            </div>
             <span className="font-bold text-2xl tracking-tight">Yayasan Ashabul Quran</span>
           </div>
           <p className="text-gray-400 max-w-sm mb-8 leading-relaxed">
             Yayasan pendidikan Islam modern yang berfokus pada tahfidz Al-Quran, sains, dan teknologi untuk masa depan yang lebih cerah.
           </p>
           <div className="flex gap-4">
-            <SocialButton icon={<Instagram size={20} />} />
-            <SocialButton icon={<Facebook size={20} />} />
-            <SocialButton icon={<Youtube size={20} />} />
+            <SocialButton 
+              icon={<Instagram size={20} />} 
+              href="https://www.instagram.com/rumah_tahfidz_balangan/"
+            />
+            <SocialButton icon={<Facebook size={20} />} href="#" />
+            <SocialButton icon={<Youtube size={20} />} href="#" />
           </div>
         </div>
 
@@ -426,38 +520,38 @@ const Footer = () => {
         <div>
           <h4 className="font-bold text-lg mb-6">Kontak</h4>
           <ul className="space-y-4 text-gray-400">
-            <li>Jl. Pendidikan No. 99, Jakarta Selatan</li>
-            <li>+62 812 3456 7890</li>
-            <li>info@ashabulquran.sch.id</li>
+            <li>Jalan Mesjid Darul Abrar No. 2, Desa Awayan Hilir, Kecamatan Awayan, Kabupaten Balangan, Kalimantan Selatan</li>
+            <li>+62 853 8967 8460</li>
+            <li>yaqblg@gmail.com</li>
           </ul>
         </div>
       </div>
       
       <div className="max-w-7xl mx-auto px-6 pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
         <p>&copy; 2025 Yayasan Ashabul Quran. All rights reserved.</p>
-        <p>Designed with ❤️ by Gen Z Dev</p>
+        <p>Designed with | Ahmad Maulana</p>
       </div>
     </footer>
   );
 };
 
-const SocialButton = ({ icon }: {icon: any}) => (
-  <motion.button
+// --- KOMPONEN TOMBOL SOSMED ---
+const SocialButton = ({ icon, href }: { icon: any, href: string }) => (
+  <motion.a
+    href={href}
+    target="_blank"             
+    rel="noopener noreferrer"   
     whileHover={{ y: -5, backgroundColor: '#800000' }}
-    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white transition-colors"
+    className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white transition-colors cursor-pointer"
   >
     {icon}
-  </motion.button>
+  </motion.a>
 );
 
-// --- MAIN APP COMPONENT ---
+// --- KOMPONEN UTAMA (APP) ---
 export default function App() {
   return (
     <div className={`min-h-screen bg-[#F3F4F6] font-sans selection:bg-[#006633] selection:text-white`}>
-      {/* In Next.js layout.tsx, you would add the font:
-        import { Poppins } from 'next/font/google'
-        const poppins = Poppins({ subsets: ['latin'], weight: ['400', '600', '700'] })
-      */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&display=swap');
         body { font-family: 'Poppins', sans-serif; }
