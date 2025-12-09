@@ -502,8 +502,12 @@ const Footer = () => {
               icon={<Instagram size={20} />} 
               href="https://www.instagram.com/rumah_tahfidz_balangan/"
             />
-            <SocialButton icon={<Facebook size={20} />} href="#" />
-            <SocialButton icon={<Youtube size={20} />} href="#" />
+            <SocialButton
+              icon={<Facebook size={20} />}
+              href="https://www.facebook.com/HafidzAsia/?locale=id_ID" />
+            <SocialButton
+              icon={<Youtube size={20} />}
+              href="https://www.youtube.com/channel/UCSSLmpx_w60uCZKSGh4FBUw/videos" />
           </div>
         </div>
 
